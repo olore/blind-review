@@ -1,0 +1,27 @@
+{
+  "name": "Blind Review",
+  "description": "Review Requests without bias by obscuring usernames and profile images",
+  "manifest_version": 2,
+  "version": "1.0",
+  "homepage_url": "https://github.com/olore/blind-review",
+
+  "icons": {
+    "48": "anon.png"
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "run_at": "document_start",
+      "matches": [
+        "*://*/*/pull*",
+        "*://*/*/pull-requests/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ]
+
+}
