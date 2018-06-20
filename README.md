@@ -30,11 +30,11 @@ Screenshots
 
 Shoutouts
 ---------
-- Framework for building borrowed from https://github.com/sindresorhus/refined-github
+- Framework for building browser plugins borrowed from the amazing [Sindre Sorhhus](https://github.com/sindresorhus) and his [refined-github](https://github.com/sindresorhus/refined-github) project.
 
 
-Related
--------
+Inspiration
+-----------
 - Gender differences and bias in open source: Pull request acceptance of women versus men
     - https://news.ycombinator.com/item?id=11074587
     - https://peerj.com/preprints/1733/

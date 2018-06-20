@@ -6,7 +6,7 @@
   "homepage_url": "https://github.com/olore/blind-review",
 
   "icons": {
-    "48": "anon.png"
+    "48": "icon-48x48.png"
   },
   "permissions": [
     "activeTab"
