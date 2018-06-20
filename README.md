@@ -6,6 +6,8 @@ Install
 -------
 - [**Chrome** extension](https://chrome.google.com/webstore/detail/blind-review/mpejgchdkdnopdakonfflegngoehabca) [<img valign="middle" src="https://img.shields.io/chrome-web-store/v/mpejgchdkdnopdakonfflegngoehabca.svg?label=%20">](https://chrome.google.com/webstore/detail/blind-review/mpejgchdkdnopdakonfflegngoehabca)
 
+About
+-----
 We all have our own code review biases, whether we admit it or not. 
 - "This person always writes good code, I'm just going to merge it" 
 - "I better go over this thoroughly because this person screwed things up last time"
