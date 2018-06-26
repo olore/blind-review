@@ -15,8 +15,7 @@
     {
       "run_at": "document_start",
       "matches": [
-        "*://*/*/pull*",
-        "*://*/*/pull-requests/*"
+        "*://github.com/*"
       ],
       "js": [
         "content.js"

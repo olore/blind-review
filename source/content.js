@@ -1,10 +1,24 @@
 import elementReady from 'element-ready';
 import domLoaded from 'dom-loaded';
-import select from 'select-dom';
-import ghInjection from 'github-injection';
+
+async function init() {
+    await safeElementReady('body');
+    document.addEventListener('pjax:end', doWork);  // doWork after github page navigation is complete
+
+    await domLoaded;
+    await Promise.resolve();
+
+    doWork(); // doWork after first github page is complete
+}
 
 function doWork() {
+    let uri = window.location.pathname;
+    if (!uri.match(/\/pull\//) && !uri.match(/\/pulls$/)) { // skip if we aren't on a PR page
+        return;
+    }
     let block = "&block;&block;&block;"
+    let blackImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
     let imageSelectors = [
         'img.avatar',
         'img.from-avatar',
@@ -20,32 +34,17 @@ function doWork() {
     let imageNodes = Array.from(document.querySelectorAll(imageSelectors.join(', ')));
     let authorNodes = Array.from(document.querySelectorAll(authorSelectors.join(', ')));
 
+
+    console.log('imageNodes', imageNodes.length);
+    console.log('authorNodes', authorNodes.length);
+
     imageNodes.forEach((img, i) => {
-        img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+        img.src = blackImage;
     });
 
     authorNodes.forEach((a, i) => {
         a.innerHTML = block;
     });
-
-}
-
-
-// h/t to https://github.com/sindresorhus/refined-github/ for providing a mechanism for 
-// handling page loads & navigation in github
-
-/**
- *`github-injection` happens even when the user navigates in history
- * This causes listeners to run on content that has already been updated.
- * If a feature needs to be disabled when navigating away,
- * use the regular `github-injection`
- */
-export function safeOnAjaxedPages(callback) {
-	ghInjection(() => {
-		if (!select.exists('has-rgh')) {
-			callback();
-		}
-	});
 }
 
 /**
@@ -61,8 +60,4 @@ export const safeElementReady = selector => {
 	return waiting.catch(() => null);
 };
 
-safeOnAjaxedPages(async () => {
-    // Wait for the tab bar to be loaded
-    await safeElementReady('.pagehead + *');
-    doWork();
-});
+init();
