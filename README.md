@@ -16,10 +16,7 @@ We all have our own code review biases, whether we admit it or not.
 
 The goal of this extension is to relieve you, the pull-request reviewer, of your known and unknown biases. Treat the code **as the code**, no matter who wrote it.
 
-Take it for a spin and [let me know](https://twitter.com/olore) how it changes your view of your peers work.
-
-NB: It is easy enough to see who made comments or created the Pull Request by hovering or clicking on the redacted name or image, so fear not, you will not be completely in the dark.. which is especially useful if you need to @message someone. Perhaps in future versions there will be levels of obscuring.
-
+Take it for a spin and [let me know](https://twitter.com/olore) how it changes your review process.
 
 Building
 --------

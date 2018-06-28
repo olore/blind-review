@@ -7,7 +7,7 @@ module.exports = () => ({
     devtool: 'sourcemap',
     entry: {
         content: './source/content',
-        // background: './source/background',
+        background: './source/background',
         // options: './source/options'
     },
     output: {

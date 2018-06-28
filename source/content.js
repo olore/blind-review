@@ -1,25 +1,35 @@
 import elementReady from 'element-ready';
 import domLoaded from 'dom-loaded';
 
+let origNodes = [];
+let origImages = [];
+
 async function init() {
-  await safeElementReady('body');
-  document.addEventListener('pjax:end', doWork);  // doWork after github page navigation is complete
 
-  await domLoaded;
-  await Promise.resolve();
+  chrome.storage.local.get(['isEnabled'], async (storage) => {
+    let storedIsEnabled = storage.isEnabled
+    console.log('init', storedIsEnabled);
+    let isEnabled = Boolean(storedIsEnabled); // make it a bool (don't flip, this is init)
 
-  doWork(); // doWork after first github page is complete
+    await safeElementReady('body');
+    document.addEventListener('pjax:end', doWork);  // doWork after github page navigation is complete
+
+    await domLoaded;
+    await Promise.resolve();
+
+    doWork(isEnabled); // doWork after first github page is complete
+  });
 }
 
-function doWork() {
+function doWork(isEnabled) {
   let uri = window.location.pathname;
   if (!uri.match(/\/pull\//) && !uri.match(/\/pulls$/)) { // skip if we aren't on a PR page
     return;
   }
-  obfuscate();
+  obfuscate(isEnabled);
 }
 
-function obfuscate() {
+function obfuscate(isEnabled) {
   let block = "&block;&block;&block;"
   let blackImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
@@ -38,16 +48,33 @@ function obfuscate() {
   let imageNodes = Array.from(document.querySelectorAll(imageSelectors.join(', ')));
   let authorNodes = Array.from(document.querySelectorAll(authorSelectors.join(', ')));
 
-  // console.log('imageNodes', imageNodes.length);
-  // console.log('authorNodes', authorNodes.length);
+  if (isEnabled) {
+    if (origNodes.length === 0 && origImages.length === 0) {
+      origNodes = authorNodes.map((n) => n.innerHTML);
+      origImages = imageNodes.map((n) => n.src);
+    }
 
-  imageNodes.forEach((img, i) => {
-    img.src = blackImage;
-  });
+    imageNodes.forEach((img, i) => {
+      img.src = blackImage;
+    });
 
-  authorNodes.forEach((a, i) => {
-    a.innerHTML = block;
-  });
+    authorNodes.forEach((a, i) => {
+      a.innerHTML = block;
+    });
+
+  } else {
+    if (origImages.length > 0) {
+      imageNodes.forEach((img, i) => {
+        img.src = origImages[i];
+      });
+    }
+
+    if (origNodes.length > 0) {
+      authorNodes.forEach((a, i) => {
+        a.innerHTML = origNodes[i];
+      });
+    }
+  }
 }
 
 // from https://github.com/sindresorhus/refined-github
@@ -65,3 +92,9 @@ export const safeElementReady = selector => {
 };
 
 init();
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  doWork(request.obfuscate);
+  sendResponse("Hello from content script, I am done working");
+  return true;
+});

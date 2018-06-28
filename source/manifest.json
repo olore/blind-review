@@ -2,15 +2,23 @@
   "name": "Blind Review",
   "description": "A browser extension to help perform unbiased reviews of pull requests",
   "manifest_version": 2,
-  "version": "1.1",
+  "version": "1.2",
   "homepage_url": "https://github.com/olore/blind-review",
 
   "icons": {
     "48": "icon-48x48.png"
   },
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "declarativeContent",
+    "storage",
+    "tabs"
   ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
   "content_scripts": [
     {
       "run_at": "document_start",
@@ -21,6 +29,12 @@
         "content.js"
       ]
     }
-  ]
-
+  ],
+  "page_action": {
+    "default_title": "Toggle Blind Review",
+    "default_icon": {
+      "16": "icon-48x48.png",
+      "32": "icon-48x48.png"
+    }
+  }
 }
