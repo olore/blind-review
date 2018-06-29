@@ -30,6 +30,14 @@ function doWork(isEnabled) {
 function obfuscate(isEnabled) {
   let block = "&block;&block;&block;"
   let blackImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  let self = 'olore';
+
+  if (isGithub()) {
+    let headerImages = Array.from(document.querySelectorAll('header img.avatar'));
+    if (headerImages.length > 1) {
+      self = headerImages[1].alt.replace('@', ''); // 2nd image
+    }
+  }
 
   let imageSelectors = [
     'img.avatar',
@@ -53,11 +61,15 @@ function obfuscate(isEnabled) {
     }
 
     imageNodes.forEach((img, i) => {
-      img.src = blackImage;
+      if (img.alt !== `@${self}`) { // don't obfuscate self
+        img.src = blackImage;
+      }
     });
 
     authorNodes.forEach((a, i) => {
-      a.innerHTML = block;
+      if (a.href !== `https://github.com/${self}`) { // don't obfuscate self
+        a.innerHTML = block;
+      }
     });
 
   } else {
@@ -88,6 +100,10 @@ export const safeElementReady = selector => {
   // If cancelled, return null like a regular select() would
   return waiting.catch(() => null);
 };
+
+function isGithub() {
+  return /github\.com/.test(window.location.href);
+}
 
 init();
 
