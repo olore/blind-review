@@ -41,6 +41,8 @@ function obfuscate(isEnabled) {
     'a.assignee',
     '.opened-by > a.muted-link',
     'a.commit-author',
+    '.gh-header-meta .css-truncate-target.user',
+    '.user-mention',
   ];
 
   let imageNodes = Array.from(document.querySelectorAll(imageSelectors.join(', ')));
