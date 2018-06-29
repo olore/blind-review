@@ -7,9 +7,7 @@ let origImages = [];
 async function init() {
 
   chrome.storage.local.get(['isEnabled'], async (storage) => {
-    let storedIsEnabled = storage.isEnabled
-    console.log('init', storedIsEnabled);
-    let isEnabled = Boolean(storedIsEnabled); // make it a bool (don't flip, this is init)
+    let isEnabled = Boolean(storage.isEnabled); // make it a bool (don't flip, this is init)
 
     await safeElementReady('body');
     document.addEventListener('pjax:end', doWork);  // doWork after github page navigation is complete
