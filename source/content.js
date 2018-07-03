@@ -1,5 +1,8 @@
 import elementReady from 'element-ready';
 import domLoaded from 'dom-loaded';
+import {observe} from 'selector-observer';
+import debounce from 'lodash.debounce';
+
 
 let origNodes = [];
 let origImages = [];
@@ -12,16 +15,37 @@ async function init() {
     await safeElementReady('body');
     document.addEventListener('pjax:end', doWork);  // doWork after github page navigation is complete
 
+
     await domLoaded;
     await Promise.resolve();
 
-    doWork(isEnabled); // doWork after first github page is complete
+    let isBitBucket = true;
+
+    if (isBitBucket && window.location.href.match(/pull-requests\/.*/)) {
+      // bitbucket only
+
+      let debouncedDoWork = debounce(() => {
+        doWork(isEnabled);
+      }, 50);
+
+      observe('.activity-item', {
+        initialize(el) {
+          debouncedDoWork();
+        }
+      });
+    } else {
+      doWork(isEnabled); // doWork after first github page is complete
+    }
+
   });
 }
 
 function doWork(isEnabled) {
   let uri = window.location.pathname;
-  if (!uri.match(/\/pull\//) && !uri.match(/\/pulls$/)) { // skip if we aren't on a PR page
+  if ( !uri.match(/\/pull\//)           // github
+    && !uri.match(/\/pulls$/)           // github
+    && !uri.match(/\/pull-requests/)    // bitbucket
+  ) { // skip if we aren't on a PR page
     return;
   }
   obfuscate(isEnabled);
@@ -40,17 +64,32 @@ function obfuscate(isEnabled) {
   }
 
   let imageSelectors = [
+    // github.com
     'img.avatar',
     'img.from-avatar',
     'a.avatar > img',
+
+    // Atlassian Bitbucket v4.14.5
+    '.author img',
+    '.activity-item-content .summary > a',
+    '.user-avatar img',
+    '.avatar img',
   ];
   let authorSelectors = [
+    // github.com
     'a.author',
     'a.assignee',
     '.opened-by > a.muted-link',
     'a.commit-author',
     '.gh-header-meta .css-truncate-target.user',
     '.user-mention',
+
+    // Atlassian Bitbucket v4.14.5
+    '.author .name',
+    '.activity-item-content .aui-avatar-inner img',
+    '.comment .content > a',
+    '.action > .summary > a',
+    ".pr-author-number-and-timestamp > span",
   ];
 
   let imageNodes = Array.from(document.querySelectorAll(imageSelectors.join(', ')));

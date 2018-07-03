@@ -67,7 +67,7 @@ var matchingRule = {
     }),
     new chrome.declarativeContent.PageStateMatcher({
       pageUrl: { 
-        urlMatches: '.*\/pull-requests\/.*'
+        urlMatches: '.*\/pull-requests.*' // bitbucket
       },
     })
   ],
