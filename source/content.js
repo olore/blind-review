@@ -15,15 +15,10 @@ async function init() {
     await safeElementReady('body');
     document.addEventListener('pjax:end', doWork);  // doWork after github page navigation is complete
 
-
     await domLoaded;
     await Promise.resolve();
 
-    let isBitBucket = true;
-
-    if (isBitBucket && window.location.href.match(/pull-requests\/.*/)) {
-      // bitbucket only
-
+    if (isBitBucket() && window.location.href.match(/pull-requests\/.*/)) {
       let debouncedDoWork = debounce(() => {
         doWork(isEnabled);
       }, 50);
@@ -75,6 +70,7 @@ function obfuscate(isEnabled) {
     '.user-avatar img',
     '.avatar img',
   ];
+
   let authorSelectors = [
     // github.com
     'a.author',
@@ -108,7 +104,8 @@ function obfuscate(isEnabled) {
     });
 
     authorNodes.forEach((a, i) => {
-      if (a.href !== `https://github.com/${self}`) { // don't obfuscate self
+      if ( (a.title && !a.title.includes(self)) ||
+           (a.innerText && !a.innerText.includes(self))) {
         a.innerHTML = block;
       }
     });
@@ -146,10 +143,15 @@ function isGithub() {
   return /github\.com/.test(window.location.href);
 }
 
-init();
+function isBitBucket() {
+  return /bitbucket/.test(window.location.href);
+}
 
+// Listen for message from background script that button was clicked
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   doWork(request.obfuscate);
   sendResponse("Hello from content script, I am done working");
   return true;
 });
+
+init();
