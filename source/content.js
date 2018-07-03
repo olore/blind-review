@@ -50,11 +50,20 @@ function obfuscate(isEnabled) {
   let block = "&block;&block;&block;"
   let blackImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
   let self = 'olore';
+  let selfAlt = 'Olore, Brian (CORP)';
 
   if (isGithub()) {
     let headerImages = Array.from(document.querySelectorAll('header img.avatar'));
     if (headerImages.length > 1) {
       self = headerImages[1].alt.replace('@', ''); // 2nd image
+    }
+  } else if (isBitBucket()) {
+    let currentUser = document.querySelector('header #current-user');
+    if (currentUser) {
+      self = currentUser.attributes['data-username'].value
+      let currentUserImage = document.querySelector('header #current-user img');
+      selfAlt = currentUserImage.attributes['alt'].value;
+      selfAlt = selfAlt.match(/Logged in as (.*) \(.*\)$/)[1]
     }
   }
 
@@ -98,15 +107,19 @@ function obfuscate(isEnabled) {
     }
 
     imageNodes.forEach((img, i) => {
-      if (img.alt !== `@${self}`) { // don't obfuscate self
+      if (img.alt !== `@${self}` &&   // github
+          img.alt !== selfAlt) {      // bitbucket
         img.src = blackImage;
       }
     });
 
     authorNodes.forEach((a, i) => {
       if ( (a.title && !a.title.includes(self)) ||
-           (a.innerText && !a.innerText.includes(self))) {
-        a.innerHTML = block;
+           (a.innerText && !a.innerText.includes(self))) {      // github
+
+        if (a.href && !a.href.trim().endsWith(self)) {          // bitbucket
+          a.innerHTML = block;
+        }
       }
     });
 
