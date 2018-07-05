@@ -23,7 +23,7 @@
     {
       "run_at": "document_start",
       "matches": [
-        "*://github.com/*"
+        "*://*/*"
       ],
       "js": [
         "content.js"

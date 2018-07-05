@@ -1,5 +1,8 @@
 import elementReady from 'element-ready';
 import domLoaded from 'dom-loaded';
+import {observe} from 'selector-observer';
+import debounce from 'lodash.debounce';
+
 
 let origNodes = [];
 let origImages = [];
@@ -15,13 +18,29 @@ async function init() {
     await domLoaded;
     await Promise.resolve();
 
-    doWork(isEnabled); // doWork after first github page is complete
+    if (isBitBucket() && window.location.href.match(/pull-requests\/.*/)) {
+      let debouncedDoWork = debounce(() => {
+        doWork(isEnabled);
+      }, 50);
+
+      observe('.activity-item', {
+        initialize(el) {
+          debouncedDoWork();
+        }
+      });
+    } else {
+      doWork(isEnabled); // doWork after first github page is complete
+    }
+
   });
 }
 
 function doWork(isEnabled) {
   let uri = window.location.pathname;
-  if (!uri.match(/\/pull\//) && !uri.match(/\/pulls$/)) { // skip if we aren't on a PR page
+  if ( !uri.match(/\/pull\//)           // github
+    && !uri.match(/\/pulls$/)           // github
+    && !uri.match(/\/pull-requests/)    // bitbucket
+  ) { // skip if we aren't on a PR page
     return;
   }
   obfuscate(isEnabled);
@@ -31,26 +50,51 @@ function obfuscate(isEnabled) {
   let block = "&block;&block;&block;"
   let blackImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
   let self = 'olore';
+  let selfAlt = 'Olore, Brian (CORP)';
 
   if (isGithub()) {
     let headerImages = Array.from(document.querySelectorAll('header img.avatar'));
     if (headerImages.length > 1) {
       self = headerImages[1].alt.replace('@', ''); // 2nd image
     }
+  } else if (isBitBucket()) {
+    let currentUser = document.querySelector('header #current-user');
+    if (currentUser) {
+      self = currentUser.attributes['data-username'].value
+      let currentUserImage = document.querySelector('header #current-user img');
+      selfAlt = currentUserImage.attributes['alt'].value;
+      selfAlt = selfAlt.match(/Logged in as (.*) \(.*\)$/)[1]
+    }
   }
 
   let imageSelectors = [
+    // github.com
     'img.avatar',
     'img.from-avatar',
     'a.avatar > img',
+
+    // Atlassian Bitbucket v4.14.5
+    '.author img',
+    '.activity-item-content .summary > a',
+    '.user-avatar img',
+    '.avatar img',
   ];
+
   let authorSelectors = [
+    // github.com
     'a.author',
     'a.assignee',
     '.opened-by > a.muted-link',
     'a.commit-author',
     '.gh-header-meta .css-truncate-target.user',
     '.user-mention',
+
+    // Atlassian Bitbucket v4.14.5
+    '.author .name',
+    '.activity-item-content .aui-avatar-inner img',
+    '.comment .content > a',
+    '.action > .summary > a',
+    ".pr-author-number-and-timestamp > span",
   ];
 
   let imageNodes = Array.from(document.querySelectorAll(imageSelectors.join(', ')));
@@ -63,14 +107,19 @@ function obfuscate(isEnabled) {
     }
 
     imageNodes.forEach((img, i) => {
-      if (img.alt !== `@${self}`) { // don't obfuscate self
+      if (img.alt !== `@${self}` &&   // github
+          img.alt !== selfAlt) {      // bitbucket
         img.src = blackImage;
       }
     });
 
     authorNodes.forEach((a, i) => {
-      if (!a.href.startsWith(`https://github.com/${self}`)) { // don't obfuscate self
-        a.innerHTML = block;
+      if ( (a.title && !a.title.includes(self)) ||
+           (a.innerText && !a.innerText.includes(self))) {      // github
+
+        if (a.href && !a.href.trim().endsWith(self)) {          // bitbucket
+          a.innerHTML = block;
+        }
       }
     });
 
@@ -107,10 +156,15 @@ function isGithub() {
   return /github\.com/.test(window.location.href);
 }
 
-init();
+function isBitBucket() {
+  return /bitbucket/.test(window.location.href);
+}
 
+// Listen for message from background script that button was clicked
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   doWork(request.obfuscate);
   sendResponse("Hello from content script, I am done working");
   return true;
 });
+
+init();
