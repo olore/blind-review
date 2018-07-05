@@ -1,4 +1,9 @@
 {
+    "repository": {
+      "type": "git",
+      "url": "git@github.com:olore/blind-review.git"
+    },
+    "license": "MIT",
     "scripts": {
         "build": "webpack --mode=production",
         "watch": "webpack --mode=development --watch",
