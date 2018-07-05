@@ -69,7 +69,7 @@ function obfuscate(isEnabled) {
     });
 
     authorNodes.forEach((a, i) => {
-      if (a.href !== `https://github.com/${self}`) { // don't obfuscate self
+      if (!a.href.startsWith(`https://github.com/${self}`)) { // don't obfuscate self
         a.innerHTML = block;
       }
     });
