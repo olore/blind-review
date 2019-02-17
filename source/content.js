@@ -3,13 +3,43 @@ import domLoaded from 'dom-loaded';
 import {observe} from 'selector-observer';
 import debounce from 'lodash.debounce';
 
-
 let origNodes = [];
 let origImages = [];
+let imageSelectors = [
+  // github.com
+  'img.avatar',
+  'img.from-avatar',
+  'a.avatar > img',
+
+  // Atlassian Bitbucket v4.14.5
+  '.author img',
+  '.activity-item-content .summary > a',
+  '.user-avatar img',
+  '.avatar img',
+];
+
+let authorSelectors = [
+  // github.com
+  'a.author',
+  'span.author',
+  'a.assignee',
+  '.opened-by > a.muted-link',
+  'a.commit-author',
+  '.gh-header-meta .css-truncate-target.user',
+  '.user-mention',
+
+  // Atlassian Bitbucket v4.14.5
+  '.author .name',
+  '.activity-item-content .aui-avatar-inner img',
+  '.comment .content > a',
+  '.action > .summary > a',
+  ".pr-author-number-and-timestamp > span",
+];
 
 async function init() {
 
-  chrome.storage.local.get(['isEnabled'], async (storage) => {
+  browser.storage.local.get(['isEnabled'])
+  .then(async (storage) => {
     let isEnabled = Boolean(storage.isEnabled); // make it a bool (don't flip, this is init)
 
     await safeElementReady('body');
@@ -53,10 +83,12 @@ function obfuscate(isEnabled) {
   let selfAlt = 'Olore, Brian (CORP)';
 
   if (isGithub()) {
-    let headerImages = Array.from(document.querySelectorAll('header img.avatar'));
+    let userImage = '#user-links > li:nth-child(3) > details > summary > img';
+    let headerImages = Array.from(document.querySelectorAll(userImage));
     if (headerImages.length > 1) {
-      self = headerImages[1].alt.replace('@', ''); // 2nd image
+      self = headerImages[2].alt.replace('@', '');
     }
+
   } else if (isBitBucket()) {
     let currentUser = document.querySelector('header #current-user');
     if (currentUser) {
@@ -67,38 +99,22 @@ function obfuscate(isEnabled) {
     }
   }
 
-  let imageSelectors = [
-    // github.com
-    'img.avatar',
-    'img.from-avatar',
-    'a.avatar > img',
-
-    // Atlassian Bitbucket v4.14.5
-    '.author img',
-    '.activity-item-content .summary > a',
-    '.user-avatar img',
-    '.avatar img',
-  ];
-
-  let authorSelectors = [
-    // github.com
-    'a.author',
-    'a.assignee',
-    '.opened-by > a.muted-link',
-    'a.commit-author',
-    '.gh-header-meta .css-truncate-target.user',
-    '.user-mention',
-
-    // Atlassian Bitbucket v4.14.5
-    '.author .name',
-    '.activity-item-content .aui-avatar-inner img',
-    '.comment .content > a',
-    '.action > .summary > a',
-    ".pr-author-number-and-timestamp > span",
-  ];
-
   let imageNodes = Array.from(document.querySelectorAll(imageSelectors.join(', ')));
   let authorNodes = Array.from(document.querySelectorAll(authorSelectors.join(', ')));
+
+  // remove self from authorNodes
+  let notMeNodes = [];
+  authorNodes.forEach((a, i) => {
+    if ( (a.title && a.title.includes(self)) ||
+         (a.innerText && a.innerText.includes(self)) || // github
+         (a.href && a.href.trim().endsWith(self))) {    // bitbucket
+
+      //console.log('removing', a.title, a.innerText, a.href);
+    } else {
+      notMeNodes.push(a);
+    }
+  });
+  authorNodes = notMeNodes;
 
   if (isEnabled) {
     if (origNodes.length === 0 && origImages.length === 0) {
@@ -114,13 +130,7 @@ function obfuscate(isEnabled) {
     });
 
     authorNodes.forEach((a, i) => {
-      if ( (a.title && !a.title.includes(self)) ||
-           (a.innerText && !a.innerText.includes(self))) {      // github
-
-        if (a.href && !a.href.trim().endsWith(self)) {          // bitbucket
-          a.innerHTML = block;
-        }
-      }
+      a.innerHTML = block;
     });
 
   } else {
@@ -161,6 +171,7 @@ function isBitBucket() {
 }
 
 // Listen for message from background script that button was clicked
+// FIXME - why can't this be `browser` instead of `chrome` ?
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   doWork(request.obfuscate);
   sendResponse("Hello from content script, I am done working");

@@ -16,6 +16,7 @@
   ],
   "background": {
     "scripts": [
+      "browser-polyfill.min.js",
       "background.js"
     ]
   },
@@ -26,6 +27,7 @@
         "*://*/*"
       ],
       "js": [
+        "browser-polyfill.min.js",
         "content.js"
       ]
     }
@@ -35,6 +37,10 @@
     "default_icon": {
       "16": "icon-48x48.png",
       "32": "icon-48x48.png"
-    }
+    },
+    "show_matches": [
+      "*://*/*/pull/*",
+      "*://*/*/pull-requests/*"
+    ]
   }
 }
