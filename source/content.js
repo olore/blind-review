@@ -27,6 +27,7 @@ let authorSelectors = [
   'a.commit-author',
   '.gh-header-meta .css-truncate-target.user',
   '.user-mention',
+  'a[data-hovercard-type=user]',
 
   // Atlassian Bitbucket v4.14.5
   '.author .name',
@@ -38,12 +39,15 @@ let authorSelectors = [
 
 async function init() {
 
-  browser.storage.local.get(['isEnabled'])
-  .then(async (storage) => {
-    let isEnabled = Boolean(storage.isEnabled); // make it a bool (don't flip, this is init)
+  chrome.storage.local.get(['isEnabled'])
+  .then(async (result) => {
+    let isEnabled = Boolean(result.isEnabled); // make it a bool (don't flip, this is init)
 
     await safeElementReady('body');
-    document.addEventListener('pjax:end', doWork);  // doWork after github page navigation is complete
+    // document.addEventListener('loadend', doWork);  // doWork after github page navigation is complete
+    // document.addEventListener('load', () => {
+    //   console.log("nav loaded!");
+    // });
 
     await domLoaded;
     await Promise.resolve();
@@ -66,9 +70,11 @@ async function init() {
 }
 
 function doWork(isEnabled) {
+  console.log("doing work", isEnabled);
   let uri = window.location.pathname;
   if ( !uri.match(/\/pull\//)           // github
-    && !uri.match(/\/pulls$/)           // github
+    && !uri.match(/\/pulls/)            // github
+    && !uri.match(/\/commits/)          // github
     && !uri.match(/\/pull-requests/)    // bitbucket
   ) { // skip if we aren't on a PR page
     return;

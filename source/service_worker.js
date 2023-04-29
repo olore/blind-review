@@ -1,12 +1,20 @@
-// background script - CANNOT interact with page
+// CANNOT interact with page
 
-// console.log('hello from bg');
+let bw;
 
-browser.pageAction.onClicked.addListener(() => {
-  let bw = new BackgroundWorker();
+chrome.action.onClicked.addListener(() => {
+  bw = new BackgroundWorker();
+  console.log("extension button clicked");
   bw.handleButtonClick();
 });
 
+chrome.webNavigation.onHistoryStateUpdated.addListener(() => {
+  console.log("history changed");
+  if (bw) {
+    // debounce, this happens a lot!
+    bw.handleButtonClick();
+  }
+});
 class BackgroundWorker {
 
   constructor() {
@@ -14,11 +22,11 @@ class BackgroundWorker {
   }
 
   handleButtonClick() {
-    browser.storage.local.get(['isEnabled'])
-    .then((storage) => {
-      let storedIsEnabled = storage.isEnabled;
+    chrome.storage.local.get(['isEnabled'])
+    .then((result) => {
+      let storedIsEnabled = result.isEnabled;
       this.isEnabled = !Boolean(storedIsEnabled); // flip it & make it a bool
-      browser.storage.local.set({isEnabled: this.isEnabled}); // store flipped value
+      chrome.storage.local.set({isEnabled: this.isEnabled}); // store flipped value
 
       // console.log('button clicked, sending msg to tab');
       this.sendMessageToCurrentTab({obfuscate: this.isEnabled})
@@ -32,11 +40,11 @@ class BackgroundWorker {
   }
 
   sendMessageToCurrentTab(msg) {
-      return browser.tabs.query({
+      return chrome.tabs.query({
         currentWindow: true,
         active: true
       }).then((tabs) => {
-        return browser.tabs.sendMessage(
+        return chrome.tabs.sendMessage(
           tabs[0].id,
           msg);
       });
