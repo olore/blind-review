@@ -1,4 +1,5 @@
 import elementReady from 'element-ready';
+import { observeReadyElements } from 'element-ready';
 import domLoaded from 'dom-loaded';
 import { observe } from 'selector-observer';
 import debounce from 'lodash.debounce';
@@ -39,10 +40,16 @@ let authorSelectors = [
 
 async function init() {
   await safeElementReady('body');
-  // document.addEventListener('loadend', doWork);  // doWork after github page navigation is complete
-  // document.addEventListener('load', () => {
-  //   console.log("nav loaded!");
-  // });
+
+  // for await (const element of observeReadyElements('#repo-content-turbo-frame')) {
+  // // OR "#js-repo-pjax-container" ??
+  //   console.log(element.id);
+  //   //=> 'unicorn'
+
+  //   if (element.id === 'repo-content-turbo-frame') {
+  //     break;
+  //   }
+  // }
 
   await domLoaded;
   await Promise.resolve();
