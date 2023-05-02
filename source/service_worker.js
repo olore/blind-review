@@ -1,57 +1,52 @@
 // CANNOT interact with page
-
-let bw;
+import debounce from 'lodash.debounce';
 
 chrome.action.onClicked.addListener(() => {
-  bw = new BackgroundWorker();
   console.log("extension button clicked");
-  bw.handleButtonClick();
+  handleButtonClick();
 });
 
-chrome.webNavigation.onHistoryStateUpdated.addListener(() => {
-  console.log("history changed", bw);
-  if (bw) {
-    // debounce, this happens a lot!
-    bw.handleButtonClick();
-  }
-});
-class BackgroundWorker {
+// ---------------------------------------------------------
+// FIND A WAY TO HANDLE GITHUB PAGE NAVIAGATION
+// ONCE PAGE IS LOADED, sendMessageToCurrentTab TO OBFUSCATE
+// ---------------------------------------------------------
+// let debouncedHandleButtonClick = debounce(() => {
+//   handleButtonClick();
+// }, 500);
 
-  constructor() {
-    this.isEnabled = true;
-  }
+// chrome.webNavigation.onHistoryStateUpdated.addListener((evt) => {
+//   console.log("history changed", evt);
+//   debouncedHandleButtonClick()
+// });
 
-  handleButtonClick() {
-    chrome.storage.local.get(['isEnabled'])
-    .then((result) => {
-      let storedIsEnabled = result.isEnabled;
-      this.isEnabled = !Boolean(storedIsEnabled); // flip it & make it a bool
-      console.log("handle button click!", this.isEnabled);
-      chrome.storage.local.set({isEnabled: this.isEnabled}); // store flipped value
+// when extension button is hit
+//  * Flip the enabled boolean 
+//  * Save it
+//  * Tell the tab there was a change
+const handleButtonClick = async () => {
+  let { isEnabled } = await chrome.storage.local.get(['isEnabled'])
+  await chrome.storage.local.set({ isEnabled: !isEnabled }); // store flipped value
+  console.log("set isEnabled", isEnabled);
 
-      // console.log('button clicked, sending msg to tab');
-      this.sendMessageToCurrentTab({obfuscate: this.isEnabled})
-        .then((resp) => {
-          console.log("response from content script page", resp);
-        })
-        .catch((resp) => {
-          console.log("UH OH", resp);
-        });
+  sendMessageToCurrentTab() // { obfuscate: isEnabled })
+    .then((resp) => {
+      console.log("response from content script page", resp);
+    })
+    .catch((resp) => {
+      console.log("UH OH", resp);
     });
-  }
+}
 
-  sendMessageToCurrentTab(msg) {
-      return chrome.tabs.query({
-        currentWindow: true,
-        active: true
-      }).then((tabs) => {
-        return chrome.tabs.sendMessage(
-          tabs[0].id,
-          msg);
-      });
-  } 
-
-};
+const sendMessageToCurrentTab = (msg) => {
+  return chrome.tabs.query({
+    currentWindow: true,
+    active: true
+  }).then((tabs) => {
+    return chrome.tabs.sendMessage(
+      tabs[0].id,
+      msg);
+  });
+}
 
 
 // TODO: 2018-09-21 - Can we do this in a Firefox compatible way??
@@ -60,31 +55,30 @@ class BackgroundWorker {
 //    2 maybe add it with a webpack plugin and have 2 builds/outputs ?
 
 // if (chrome && chrome.declarativeContent) {
-  // In Chrome, the page action button display logic happens here instead of manifest.json
-  var matchingRule = {
-    conditions: [
-      new chrome.declarativeContent.PageStateMatcher({
-        pageUrl: { 
-          urlMatches: '.*\/pulls.*'
-        },
-      }),
-      new chrome.declarativeContent.PageStateMatcher({
-        pageUrl: { 
-          urlMatches: '.*\/pull\/.*'
-        },
-      }),
-      new chrome.declarativeContent.PageStateMatcher({
-        pageUrl: { 
-          urlMatches: '.*\/pull-requests.*' // bitbucket
-        },
-      })
-    ],
-    actions: [ new chrome.declarativeContent.ShowPageAction() ]
-  };
+// In Chrome, the page action button display logic happens here instead of manifest.json
+var matchingRule = {
+  conditions: [
+    new chrome.declarativeContent.PageStateMatcher({
+      pageUrl: {
+        urlMatches: '.*\/pulls.*'
+      },
+    }),
+    new chrome.declarativeContent.PageStateMatcher({
+      pageUrl: {
+        urlMatches: '.*\/pull\/.*'
+      },
+    }),
+    new chrome.declarativeContent.PageStateMatcher({
+      pageUrl: {
+        urlMatches: '.*\/pull-requests.*' // bitbucket
+      },
+    })
+  ],
+  actions: [new chrome.declarativeContent.ShowPageAction()]
+};
 
-  chrome.runtime.onInstalled.addListener((details) => {
-    chrome.declarativeContent.onPageChanged.removeRules(undefined, () => {
-      chrome.declarativeContent.onPageChanged.addRules([matchingRule]);
-    });
+chrome.runtime.onInstalled.addListener((details) => {
+  chrome.declarativeContent.onPageChanged.removeRules(undefined, () => {
+    chrome.declarativeContent.onPageChanged.addRules([matchingRule]);
   });
-// }
+});

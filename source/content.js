@@ -1,6 +1,6 @@
 import elementReady from 'element-ready';
 import domLoaded from 'dom-loaded';
-import {observe} from 'selector-observer';
+import { observe } from 'selector-observer';
 import debounce from 'lodash.debounce';
 
 let origNodes = [];
@@ -38,42 +38,36 @@ let authorSelectors = [
 ];
 
 async function init() {
+  await safeElementReady('body');
+  // document.addEventListener('loadend', doWork);  // doWork after github page navigation is complete
+  // document.addEventListener('load', () => {
+  //   console.log("nav loaded!");
+  // });
 
-  chrome.storage.local.get(['isEnabled'])
-  .then(async (result) => {
-    let isEnabled = Boolean(result.isEnabled); // make it a bool (don't flip, this is init)
+  await domLoaded;
+  await Promise.resolve();
 
-    await safeElementReady('body');
-    // document.addEventListener('loadend', doWork);  // doWork after github page navigation is complete
-    // document.addEventListener('load', () => {
-    //   console.log("nav loaded!");
-    // });
+  if (isBitBucket() && window.location.href.match(/pull-requests\/.*/)) {
+    let debouncedDoWork = debounce(() => {
+      doWork();
+    }, 50);
 
-    await domLoaded;
-    await Promise.resolve();
-
-    if (isBitBucket() && window.location.href.match(/pull-requests\/.*/)) {
-      let debouncedDoWork = debounce(() => {
-        doWork(isEnabled);
-      }, 50);
-
-      observe('.activity-item', {
-        initialize(el) {
-          debouncedDoWork();
-        }
-      });
-    } else {
-      console.log('init');
-      doWork(isEnabled); // doWork after first github page is complete
-    }
-
-  });
+    observe('.activity-item', {
+      initialize(el) {
+        debouncedDoWork();
+      }
+    });
+  } else {
+    console.log('init');
+    doWork(); // doWork after first github page is complete
+  }
 }
 
-function doWork(isEnabled) {
+async function doWork() {
+  let { isEnabled } = await chrome.storage.local.get(['isEnabled'])
   console.log("doing work", isEnabled);
   let uri = window.location.pathname;
-  if ( !uri.match(/\/pull\//)           // github
+  if (!uri.match(/\/pull\//)            // github
     && !uri.match(/\/pulls/)            // github
     && !uri.match(/\/commits/)          // github
     && !uri.match(/\/pull-requests/)    // bitbucket
@@ -130,10 +124,10 @@ function obfuscate(isEnabled) {
     }
 
     imageNodes.forEach((img, i) => {
-    //   if (img.alt !== `@${self}` &&   // github
-    //       img.alt !== selfAlt) {      // bitbucket
-        img.src = blackImage;
-    //   }
+      //   if (img.alt !== `@${self}` &&   // github
+      //       img.alt !== selfAlt) {      // bitbucket
+      img.src = blackImage;
+      //   }
     });
 
     authorNodes.forEach((a, i) => {
@@ -179,10 +173,9 @@ function isBitBucket() {
 
 // Listen for message from background script that button was clicked
 // FIXME - why can't this be `browser` instead of `chrome` ?
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('content.js')
-  doWork(request.obfuscate);
-  sendResponse("Hello from content script, I am done working");
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+  console.log('got msg & told to do work in content.js')
+  await doWork();
   return true;
 });
 
