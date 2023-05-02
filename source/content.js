@@ -20,8 +20,8 @@ let imageSelectors = [
 
 let authorSelectors = [
   // github.com
-  'a.author',
-  'span.author',
+  // 'a.author',
+  //'span.author',
   'a.assignee',
   '.opened-by > a.muted-link',
   'a.commit-author',
@@ -63,6 +63,7 @@ async function init() {
         }
       });
     } else {
+      console.log('init');
       doWork(isEnabled); // doWork after first github page is complete
     }
 
@@ -109,18 +110,18 @@ function obfuscate(isEnabled) {
   let authorNodes = Array.from(document.querySelectorAll(authorSelectors.join(', ')));
 
   // remove self from authorNodes
-  let notMeNodes = [];
-  authorNodes.forEach((a, i) => {
-    if ( (a.title && a.title.includes(self)) ||
-         (a.innerText && a.innerText.includes(self)) || // github
-         (a.href && a.href.trim().endsWith(self))) {    // bitbucket
+  // let notMeNodes = [];
+  // authorNodes.forEach((a, i) => {
+  //   if ( (a.title && a.title.includes(self)) ||
+  //        (a.innerText && a.innerText.includes(self)) || // github
+  //        (a.href && a.href.trim().endsWith(self))) {    // bitbucket
 
-      //console.log('removing', a.title, a.innerText, a.href);
-    } else {
-      notMeNodes.push(a);
-    }
-  });
-  authorNodes = notMeNodes;
+  //     //console.log('removing', a.title, a.innerText, a.href);
+  //   } else {
+  //     notMeNodes.push(a);
+  //   }
+  // });
+  // authorNodes = notMeNodes;
 
   if (isEnabled) {
     if (origNodes.length === 0 && origImages.length === 0) {
@@ -129,10 +130,10 @@ function obfuscate(isEnabled) {
     }
 
     imageNodes.forEach((img, i) => {
-      if (img.alt !== `@${self}` &&   // github
-          img.alt !== selfAlt) {      // bitbucket
+    //   if (img.alt !== `@${self}` &&   // github
+    //       img.alt !== selfAlt) {      // bitbucket
         img.src = blackImage;
-      }
+    //   }
     });
 
     authorNodes.forEach((a, i) => {
@@ -179,6 +180,7 @@ function isBitBucket() {
 // Listen for message from background script that button was clicked
 // FIXME - why can't this be `browser` instead of `chrome` ?
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('content.js')
   doWork(request.obfuscate);
   sendResponse("Hello from content script, I am done working");
   return true;

@@ -9,7 +9,7 @@ chrome.action.onClicked.addListener(() => {
 });
 
 chrome.webNavigation.onHistoryStateUpdated.addListener(() => {
-  console.log("history changed");
+  console.log("history changed", bw);
   if (bw) {
     // debounce, this happens a lot!
     bw.handleButtonClick();
@@ -26,12 +26,13 @@ class BackgroundWorker {
     .then((result) => {
       let storedIsEnabled = result.isEnabled;
       this.isEnabled = !Boolean(storedIsEnabled); // flip it & make it a bool
+      console.log("handle button click!", this.isEnabled);
       chrome.storage.local.set({isEnabled: this.isEnabled}); // store flipped value
 
       // console.log('button clicked, sending msg to tab');
       this.sendMessageToCurrentTab({obfuscate: this.isEnabled})
         .then((resp) => {
-          // console.log("response from content script page", resp);
+          console.log("response from content script page", resp);
         })
         .catch((resp) => {
           console.log("UH OH", resp);
